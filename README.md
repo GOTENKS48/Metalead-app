@@ -1,56 +1,157 @@
-# Welcome to your Expo app 👋
+# Meta Lead Alert App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A real-time lead notification proof of concept (POC) that receives Meta Lead Ads webhook events and instantly displays new leads in a React Native application using Socket.IO.
 
-## Get started
+## Features
 
-1. Install dependencies
+- **Real-time updates:** Pushes incoming webhook events to connected clients without manual refreshing.
+- **Meta webhook integration:** Provides an endpoint for webhook verification and event reception.
+- **Live communication:** Uses Socket.IO to send events from the backend to the frontend.
+- **Lead details:** Displays Lead ID, Created Time, Webhook Event Time, Received Time, Page ID, Form ID, Ad ID, and Ad Group ID.
+- **Public webhook endpoint:** Uses ngrok to expose the local backend so Meta can send webhook requests during development.
 
-   ```bash
-   npm install
-   ```
+## Tech Stack
 
-2. Start the app
+| Technology | Purpose |
+|---|---|
+| React Native | Mobile application UI |
+| Expo | React Native development environment |
+| TypeScript | Frontend implementation |
+| Node.js | Backend runtime |
+| Express.js | HTTP server and webhook endpoints |
+| Socket.IO | Real-time event communication |
+| ngrok | Exposes the local backend to the internet |
+| Meta Lead Ads | Source of lead webhook events |
 
-   ```bash
-   npx expo start
-   ```
+## Architecture
 
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **src/app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```text
+Meta Lead Ads
+     |
+     | POST /webhook
+     v
+ngrok HTTPS URL
+     |
+     v
+Node.js + Express Backend
+     |
+     | Socket.IO: pushNotification
+     v
+React Native Frontend
+     |
+     v
+Display New Lead
 ```
 
-This command will move the starter code to the **example** directory and create a blank **src/app** directory where you can start developing.
+## How It Works
 
-### Other setup steps
+1. The frontend establishes a Socket.IO connection to the backend through the ngrok URL.
+2. Meta sends a webhook verification request to `GET /webhook`.
+3. The backend validates the verification token and returns the challenge.
+4. When a lead event occurs, Meta sends a `POST /webhook` request.
+5. Express receives the event and broadcasts it through Socket.IO using the `pushNotification` event.
+6. The frontend receives the event, extracts lead information, updates React state, and displays the new lead.
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+## Prerequisites
 
-## Learn more
+- Node.js and npm
+- An Expo-compatible development environment
+- An ngrok account and installed ngrok CLI
+- A Meta developer app configured for Lead Ads webhooks
+- A Meta Page and lead form for testing
 
-To learn more about developing your project with Expo, look at the following resources:
+## Installation
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Clone the repository and install dependencies:
 
-## Join the community
+```bash
+git clone <YOUR_GITHUB_REPOSITORY_URL>
+cd ReactAssignment
+npm install
+```
 
-Join our community of developers creating universal apps.
+Configure the environment variables in a `.env` file in the project root:
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+```env
+VERIFY_TOKEN=your_custom_verification_token
+```
+
+Use the same verification token when configuring the webhook in Meta. Keep secrets out of source control.
+
+## Running the Backend
+
+Start the backend:
+
+```bash
+node server.js
+```
+
+The backend runs on port `3000`.
+
+Expose it using ngrok in a separate terminal:
+
+```bash
+ngrok http 3000
+```
+
+Copy the HTTPS forwarding URL generated by ngrok and configure it in your frontend Socket.IO client and Meta webhook settings.
+
+The Meta callback URL should be:
+
+```text
+https://YOUR_NGROK_URL/webhook
+```
+
+## Running the Frontend
+
+Start the Expo development server:
+
+```bash
+npx expo start
+```
+
+Open the application in Expo Go, an emulator, a simulator, or a supported browser environment.
+
+Make sure the Socket.IO client URL matches your current ngrok URL.
+
+## Webhook Endpoints
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| GET | `/webhook` | Verifies the Meta webhook subscription |
+| POST | `/webhook` | Receives webhook events and broadcasts them to connected clients |
+| GET | `/` | Displays a basic backend server status page |
+
+## Testing
+
+Use the Meta Lead Ads Testing Tool to generate a test lead event.
+
+Verify that:
+
+1. The backend logs the incoming webhook event.
+2. The Socket.IO client is connected.
+3. The frontend receives the `pushNotification` event.
+4. The extracted lead appears in the application.
+
+## Security Notes
+
+- Do not commit `.env` files or access tokens.
+- Restrict CORS origins appropriately for production browser clients.
+- Verify webhook authenticity before processing events in production.
+- Consider duplicate-event handling and persistent storage for production use.
+
+## Limitations
+
+This is a proof of concept. Leads are held in frontend state and may disappear when the app reloads. Production deployments should consider persistent storage, authentication, reconnection handling, and reliable event delivery.
+
+## Future Improvements
+
+- Store leads in a database.
+- Add local push notifications.
+- Add lead search, filtering, and sorting.
+- Implement webhook signature validation and duplicate-event protection.
+- Deploy the backend to a persistent hosting service.
+
+## License
+
+This project is intended for learning and proof-of-concept purposes. Add a license if you plan to distribute or open-source it.
